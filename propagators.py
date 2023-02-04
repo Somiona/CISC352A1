@@ -91,13 +91,54 @@ def prop_FC(csp, newVar=None):
     '''Do forward checking. That is check constraints with
        only one uninstantiated variable. Remember to keep
        track of all pruned variable,value pairs and return '''
-    #IMPLEMENT
-    pass
+    if newVar:
+        cons = csp.get_cons_with_var(newVar)
+    else:
+        cons = csp.get_all_cons()
+    pruned = []
+    for con in cons:
+        if con.get_n_unasgn() == 1:
+            vars = con.get_unasgn_vars()
+            var = vars[0]
+            for val in var.cur_domain():
+                if not con.check_var_val(var, val):
+                    var.prune_value(val)
+                    prune = (var, val)
+                    if prune not in pruned:
+                        pruned.append(prune)
+                if var.cur_domain_size() == 0:
+                    return False, pruned
 
+    return True, pruned
 
 def prop_GAC(csp, newVar=None):
     '''Do GAC propagation. If newVar is None we do initial GAC enforce
        processing all constraints. Otherwise we do GAC enforce with
        constraints containing newVar on GAC Queue'''
-    #IMPLEMENT
-    pass
+    if newVar:
+        cons = csp.get_cons_with_var(newVar)
+    else:
+        cons = csp.get_all_cons()
+    pruned = []
+    queue = []
+    for con in cons:
+        queue.append(con)
+    while queue:
+        curr_con = queue[0]
+        queue = queue[1:]
+        vars = curr_con.get_unasgn_vars()
+
+        for var in vars:
+
+            for val in var.cur_domain():
+                for other_var in vars:
+                    for other_val in other_var.cur_domain():
+                        if not curr_con.check_var_val(other_var, other_val):
+                            other_var.prune_value(other_val)
+                            prune = (other_var, other_val)
+                            if prune not in pruned:
+                                pruned.append(prune)
+                        if other_var.cur_domain_size() == 0:
+                            return False, pruned
+
+    return True, pruned
