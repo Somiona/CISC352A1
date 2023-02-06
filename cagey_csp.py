@@ -128,10 +128,10 @@ def binary_ne_grid(cagey_grid):
 
     # Constraints for columns (Similar to row)
     for col in range(n):  # num of rows
-        for col_ele in combinations(range(n), 2):
+        for pair in combinations(range(n), 2):
             cons = Constraint(
-                f"Col{col + 1}({col_ele[0] + 1}, {col_ele[1] + 1})",
-                [var_array[col + col_ele[0] * n], var_array[col + col_ele[1] * n]],
+                f"Col{col + 1}({pair[0] + 1}, {pair[1] + 1})",
+                [var_array[col + pair[0] * n], var_array[col + pair[1] * n]],
             )
             # Step 4: add satisfying constraints
             cons.add_satisfying_tuples(sat_tuples)
