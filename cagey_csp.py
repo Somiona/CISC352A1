@@ -82,17 +82,87 @@ An example of a 3x3 puzzle would be defined as:
 (3, [(3,[(1,1), (2,1)],"+"),(1, [(1,2)], '?'), (8, [(1,3), (2,3), (2,2)], "+"), (3, [(3,1)], '?'), (3, [(3,2), (3,3)], "+")])
 
 '''
+import itertools
 
 from cspbase import *
 
+def binary_not_equal(n):
+    dom = [(i + 1) for i in range(n)]
+    ret = []
+    for x, y in itertools.product(dom, dom):
+        if x != y:
+            ret.append((x, y))
+    return ret
+
+
+def n_ary_all_different(n):
+    return itertools.permutations([(i + 1) for i in range(n)])
+
+
+def get_vars_name(vars):
+    res = ""
+    for i, v in enumerate(vars):
+        if i != 0:
+            res += ","
+        res += v.name
+    return res
 def binary_ne_grid(cagey_grid):
-    ##IMPLEMENT
-    pass
+    n = cagey_grid[0]
+    dom = [(i + 1) for i in range(n)]
+
+    vars = []
+    for i in dom:
+        for j in dom:
+            vars.append(Variable("Cell({},{})".format(i, j), dom))
+
+    cons = []
+    for index_x, x in enumerate(vars):
+        for index_y, y in enumerate(vars):
+            if x != y:
+                xi, xj = index_x // n + 1, index_x % n + 1
+                yi, yj = index_y // n + 1, index_y % n + 1
+                if xi == yi or xj == yj:
+                    con = Constraint("C(Cell({},{}),Cell({},{}))".format(xi, xj, yi, yj), [x, y])
+                    con.add_satisfying_tuples(binary_not_equal(n))
+                    cons.append(con)
+    csp = CSP("{}-binary_ne_grid".format(n), vars)
+    for c in cons:
+        csp.add_constraint(c)
+
+    return csp, vars
 
 
 def nary_ad_grid(cagey_grid):
-    ## IMPLEMENT
-    pass
+    n = cagey_grid[0]
+    dom = [(i + 1) for i in range(n)]
+
+    vars = []
+    for i in dom:
+        for j in dom:
+            vars.append(Variable("Cell({},{})".format(i, j), dom))
+
+    cons = []
+    for i in range(n):
+        var_list_r = []
+        for j in range(n):
+            var_list_r.append(vars[i * n + j])
+        con = Constraint("C({})".format(get_vars_name(var_list_r)), var_list_r)
+        con.add_satisfying_tuples(n_ary_all_different(n))
+        cons.append(con)
+
+    for i in range(n):
+        var_list_c = []
+        for j in range(n):
+            var_list_c.append(vars[j * n + i])
+        con = Constraint("C{}".format(get_vars_name(var_list_c)), var_list_c)
+        con.add_satisfying_tuples(n_ary_all_different(n))
+        cons.append(con)
+
+    csp = CSP("{}-nary_ad_grid".format(n), vars)
+    for c in cons:
+        csp.add_constraint(c)
+
+    return csp, vars
 
 def cagey_csp_model(cagey_grid):
     ##IMPLEMENT
