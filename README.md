@@ -27,12 +27,12 @@ A variable ordering heuristic that chooses the next variable to be assigned acco
 - [ ] ord dh (worth 0.5/6 marks)
 A variable ordering heuristic that chooses the next variable to be assigned according to the Degree heuristic (DH). ord dh returns the variable that is involved in the largest number of constraints, which have other unassigned variables
 
-## Question
-- [ ] binary ne grid (worth 0.5/6 marks)
+## Question 2: Models
+- [x] binary ne grid (worth 0.5/6 marks)
 A model of a Cagey grid (without cage constraints) built using only binary not-equal constraints for both the row and column constraints.
 
-- [ ] nary ad grid (worth 0.5/6 marks)
+- [x] nary ad grid (worth 0.5/6 marks)
 A model of a Cagey grid (without cage constraints) built using only n-ary all-different constraints for both the row and column constraints.
 
-- [ ] cagey csp model (worth 1/6 marks)
+- [x] cagey csp model (worth 1/6 marks)
 A model built using your choice of (1) binary binary not-equal, or (2) n-ary all-different constraints for the grid, together with (3) cage constraints. That is, you will choose one of the previous two grid models and expand it to include cage constraints.
