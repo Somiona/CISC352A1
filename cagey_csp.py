@@ -98,7 +98,7 @@ def binary_ne_grid(cagey_grid):
     domain = [i + 1 for i in range(n)]
 
     # Step 2: create variables
-    var_array = [Variable(f"({t[0]},{t[1]})", domain) for t in product(domain, domain)]
+    var_array = [Variable(f"V{t[0]}{t[1]}", domain) for t in product(domain, domain)]
     # Step 3: add constraints
     constraints = []
 
@@ -117,7 +117,7 @@ def binary_ne_grid(cagey_grid):
     for row in range(n):  # num of rows
         for pair in combinations(range(n), 2):
             cons = Constraint(
-                f"C(Row{row + 1}({pair[0] + 1},{pair[1] + 1})",
+                f"Row{row + 1}({pair[0] + 1},{pair[1] + 1})",
                 [var_array[row * n + pair[0]], var_array[row * n + pair[1]]],
             )
             # Step 4: add satisfying constraints
@@ -128,7 +128,7 @@ def binary_ne_grid(cagey_grid):
     for col in range(n):  # num of rows
         for col_ele in combinations(range(n), 2):
             cons = Constraint(
-                f"C(Col{col+1}({col_ele[0]+1},{col_ele[1]+1})",
+                f"Col{col + 1}({col_ele[0] + 1}, {col_ele[1] + 1})",
                 [var_array[col + col_ele[0] * n], var_array[col + col_ele[1] * n]],
             )
             # Step 4: add satisfying constraints
@@ -152,9 +152,7 @@ def nary_ad_grid(cagey_grid):
     domain = [i + 1 for i in range(n)]
 
     # Step 2: create variables
-    var_array = [
-        Variable(f"Cell({t[0]},{t[1]})", domain) for t in product(domain, domain)
-    ]
+    var_array = [Variable(f"V{t[0]}{t[1]}", domain) for t in product(domain, domain)]
     # Step 3: add constraints
     constraints = []
 
@@ -165,30 +163,26 @@ def nary_ad_grid(cagey_grid):
     Example: for a 3x3 grid, there will be 3! = 6 constraints for each row.
     N-ary constraints: (C1,C2,C3) (C1,C3,C2) (C2,C1,C3) (C2,C3,C1) (C3,C1,C2) (C3,C2,C1)
     """
+    sat_tuples = list(permutations(domain))
+
     for row in range(n):
-        for t in permutations(range(n)):
-            con = Constraint(
-                f"C(Row{row + 1}-{t})", [var_array[row * n + var] for var in t]
-            )
-            # Step 4: add satisfying constraints
-            sat_tuples = list(combinations(domain, n))
-            con.add_satisfying_tuples(sat_tuples)  # Step 4
-            constraints.append(con)
+        cons = Constraint(f"Row({row})", [var_array[row * n + var] for var in range(n)])
+        # Step 4: add satisfying constraints
+        cons.add_satisfying_tuples(sat_tuples)
+        constraints.append(cons)
 
     # Constraints for columns (Similar to row)
     for col in range(n):
-        for t in permutations(range(n)):
-            con = Constraint(f"C(Col{col + 1}-{t})", [var_array[col + var * n] for var in t])
-            # Step 4: add satisfying constraints
-            sat_tuples = list(combinations(domain, n))
-            con.add_satisfying_tuples(sat_tuples)  # Step 4
-            constraints.append(con)
+        cons = Constraint(f"Col({col})", [var_array[col + var * n] for var in range(n)])
+        # Step 4: add satisfying constraints
+        cons.add_satisfying_tuples(sat_tuples)
+        constraints.append(cons)
 
-    # Step 5
-    csp = CSP(f"{n}x{n}-N-naryGrid", var_array)
+    # Step 5: return csp and var_array
+    csp = CSP(f"{n}*{n}-{n}aryGrid", var_array)
     for c in constraints:
         csp.add_constraint(c)
-    return csp, var_array  # Step 6
+    return csp, var_array
 
 
 def coord_to_index(coordinate, n):
@@ -260,8 +254,7 @@ def cagey_csp_model(cagey_grid):
         which means num of binary < num of n-ary constraints
     """
     n = cagey_grid[0]  # n x n grid
-    # csp, var_arr = nary_ad_grid((cagey_grid[0],[])) # from n-ary function above
-    csp, var_arr = binary_ne_grid((cagey_grid[0], []))  # from binary function above
+    csp, var_arr = nary_ad_grid((cagey_grid[0], []))  # from n-ary function above
 
     # Consider Cagey cage
     for count, cage in enumerate(cagey_grid[1]):
