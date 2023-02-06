@@ -98,7 +98,9 @@ def binary_ne_grid(cagey_grid):
     domain = [i + 1 for i in range(n)]
 
     # Step 2: create variables
-    var_array = [Variable(f"V{t[0]}{t[1]}", domain) for t in product(domain, domain)]
+    var_array = [
+        Variable(f"Cell({t[0]},{t[1]})", domain) for t in product(domain, domain)
+    ]
     # Step 3: add constraints
     constraints = []
 
@@ -152,7 +154,9 @@ def nary_ad_grid(cagey_grid):
     domain = [i + 1 for i in range(n)]
 
     # Step 2: create variables
-    var_array = [Variable(f"V{t[0]}{t[1]}", domain) for t in product(domain, domain)]
+    var_array = [
+        Variable(f"Cell({t[0]},{t[1]})", domain) for t in product(domain, domain)
+    ]
     # Step 3: add constraints
     constraints = []
 
@@ -185,139 +189,82 @@ def nary_ad_grid(cagey_grid):
     return csp, var_array
 
 
-def coord_to_index(coordinate, n):
-    """
-    Transform Coordinate to index position
-    T(x,y) --> i  (n is size of grid/matrix)
-    T(x,y) = (x-1) * n + (y-1)
-    """
-    x, y = coordinate[0], coordinate[1]
-    return (x - 1) * n + (y - 1)
-
-
-def evaluate(op1, op2, operator):
-    """
-    Evaluate the math statement op1 operator op2
-    Return an integer value
-    """
-    if operator == "+":
-        return op1 + op2
-    elif operator == "-":
-        return op1 - op2
-    elif operator == "*":
-        return op1 * op2
-    elif operator == "/":
-        return op1 / op2
-
-
-def cagey_check(target, operands):
+def cagey_check(target, constraint):
     """
     takes a list of valuations and attempts to determine if this is a valid assignment
-    :parm target (natural num), operands (a list of integers with an operator in the last index)
-    Return True/False
+    Parameter:
+        target (int): the target value
+        operands (list): a list of integers with the last element being the operator
+    Return True if target can be obtained by applying the operator to the operands
     """
-    value = 0
-    operator = operands[-1]
-    operands = operands[:-1]
-    if len(operands) == 1:
-        return target == operands[0]
-    elif len(operands) == 2:
-        return target == abs(evaluate(operands[0], operands[1], operator))
-    else:
-        value = operands[0]
-        for i in range(1, len(operands)):
-            value = evaluate(value, operands[i], operator)
-        return target == abs(value)
 
-
-# Testing cases
-##print("6, [1,2,3], '+' is ", cagey_check(6, [1,2,3], '+'))
-##print("6, [1,2,3], '-' is ", cagey_check(6, [1,2,3], '-'))
-##print("108, [6,3,6], '*' is ", cagey_check(108, [6,3,6], '*'))
-##print("1, [6,5], '-' is ", cagey_check(1, [6,5], '-'))
-##print("1, [5,6], '-' is ", cagey_check(1, [5,6], '-'))
-##print("4, [16,2,2], '/' is ", cagey_check(4, [16,2,2], '/'))
+    operator = constraint[-1]
+    operands = constraint[:-1]
+    try:
+        if len(operands) == 1:
+            return target == operands[0]
+        elif len(operands) == 2:
+            return target == eval(f"{operands[0]} {operator} {operands[1]}")
+        else:
+            value = operands[0]
+            for i in range(1, len(operands)):
+                value = eval(f"{value} {operator} {operands[i]}")
+            return target == value
+    except ZeroDivisionError:
+        return False
 
 
 def cagey_csp_model(cagey_grid):
     """
-    Desc: a model of a Cagey grid built using choice (1) binary not-equal
-          constraints for the grid, together with Cagey cage constraints.
+    A model of a Cagey grid built using your choice of (1) binary not-equal, or
+      (2) n-ary all-different constraints for the grid, together with Cagey cage
+      constraints.
 
-    Reason: for faster computation in terms of number of constraints
-        For n x n grid
-            num of binary constraints
-            (row + col) n x nC2 + n x nC2 = 2n x nC2
+    Choose n-ary all-different constraints for the grid. My previous code generates
+    less constraints than the binary not-equal constraints.
 
-            num of n-ary constraints
-            (row + col) n x n! + n x n! = 2n x n!
-        which means num of binary < num of n-ary constraints
+    Complain: Why test_cage_existence function just use string matching for finding the constraint?
+              I mean, I need to adjust the variable naming strategy to make it work.
+              And that was not in the scope of CSP logic.
     """
-    n = cagey_grid[0]  # n x n grid
-    csp, var_arr = nary_ad_grid((cagey_grid[0], []))  # from n-ary function above
+    # Step 1: create domain for each variable
+    n = cagey_grid[0]  # working with n*n grid
+    csp, var_arr = nary_ad_grid(cagey_grid)  # from n-ary function above
 
     # Consider Cagey cage
-    for count, cage in enumerate(cagey_grid[1]):
+    for cage in cagey_grid[1]:
         target = cage[0]
         operator = cage[2]
-        in_cage = []
 
-        # Add cage constraint & cage variable
-        dom = ["+", "-", "*", "/", "?"]
+        # Step 2: create variables
+        valid_operators = ["+", "-", "*", "/"]
+        cage_vars = [var_arr[(var[0] - 1) * n + (var[1] - 1)] for var in cage[1]]
+        cage_constraint = Variable(f"Cage_op({target}:{operator}:{cage_vars})", valid_operators)
 
-        for var in cage[1]:  # convert coordinate to index and include into constraint
-            in_cage.append(var_arr[coord_to_index(var, n)])
-        cage_oper = Variable(f"Cage_op({target}:{operator}:{in_cage})", dom)
-
-        # Add cage variable to csp
-        csp.add_var(cage_oper)
-        varlist = in_cage[:]
-        varlist.append(cage_oper)
-        con = Constraint(f"Cage_op({target}:{operator}:{in_cage})", varlist)
+        # Step 3: add constraints
+        csp.add_var(cage_constraint)
+        constraints = cage_vars[:]
+        constraints.append(cage_constraint)
+        con = Constraint(f"Cage_op({target}:{operator}:{cage_vars})", constraints)
 
         # Add satisfying tuples based on the constraints
-        cage_oper.assign(operator)  # assign operator value as given
+        cage_constraint.assign(operator)  # assign operator value as given
 
-        varDoms = []
-        for v in varlist:
-            varDoms.append(v.cur_domain())  # since we select specific operator
-
+        var_domains = [v.cur_domain() for v in constraints]
         sat_tuples = []
-        if (operator != "?") or (len(in_cage) == 1):
-            for t in product(*varDoms):
-                if cagey_check(target, t):
-                    sat_tuples.append(t)
-            con.add_satisfying_tuples(sat_tuples)
-        else:  # which mean it is ?
-            trys = ["+", "-", "*", "/"]
-            for oper in trys:
-                varDoms[-1] = oper
-                for t in product(*varDoms):
-                    if cagey_check(target, t):
-                        sat_tuples.append(t)
-            con.add_satisfying_tuples(sat_tuples)
-
+        # Step 4: Test for any possible operator combinations.
+        if (operator != "?") or (len(cage_vars) == 1):
+            sat_tuples.extend(t for t in product(*var_domains) if cagey_check(target, t))
+        else:  # Search for all the possible operator for ?
+            for o in valid_operators:
+                var_domains[-1] = o
+                sat_tuples.extend(
+                    t for t in product(*var_domains) if cagey_check(target, t)
+                )
+            # Step 4: add satisfying constraints
+        con.add_satisfying_tuples(sat_tuples)
         # Add cage var and constraints to the csp Object
-        var_arr.append(cage_oper)
+        var_arr.append(cage_constraint)
         csp.add_constraint(con)
 
     return csp, var_arr
-
-
-# Testing cases
-##binary = binary_ne_grid((3,[])) # without cage constraints
-##n_ary = nary_ad_grid((3,[]))    # without cage constraints
-##a, b = cagey_csp_model((3, [(3,[(1,1), (2,1)],'+'),
-##                    (1, [(1,2)], '?'),
-##                    (8, [(1,3), (2,3), (2,2)], "+"),
-##                    (3, [(3,1)], '?'),
-##                    (3, [(3,2), (3,3)], "+")]
-##                )
-##               )
-##print(b)
-
-##for key, val in a.vars_to_cons.items():
-##    val_name = []
-##    for i in val:
-##        val_name.append(i.name)
-##    print(key,val_name)
