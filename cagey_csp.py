@@ -252,6 +252,7 @@ def cagey_csp_model(cagey_grid):
 
         var_domains = [v.cur_domain() for v in constraints]
         sat_tuples = []
+
         # Step 4: Test for any possible operator combinations.
         if (operator != "?") or (len(cage_vars) == 1):
             sat_tuples.extend(t for t in product(*var_domains) if cagey_check(target, t))
@@ -261,9 +262,9 @@ def cagey_csp_model(cagey_grid):
                 sat_tuples.extend(
                     t for t in product(*var_domains) if cagey_check(target, t)
                 )
-            # Step 4: add satisfying constraints
+
+        # Step 5: add satisfying constraints
         con.add_satisfying_tuples(sat_tuples)
-        # Add cage var and constraints to the csp Object
         var_arr.append(cage_constraint)
         csp.add_constraint(con)
 
