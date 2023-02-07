@@ -1,6 +1,6 @@
 # =============================
-# Student Names:
-# Group ID:
+# Student Names: Jihyeon Park
+# Group ID: 23
 # Date:
 # =============================
 # CISC 352 - W23
