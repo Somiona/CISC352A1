@@ -91,13 +91,89 @@ def prop_FC(csp, newVar=None):
     '''Do forward checking. That is check constraints with
        only one uninstantiated variable. Remember to keep
        track of all pruned variable,value pairs and return '''
-    #IMPLEMENT
-    pass
 
+    #this is for retrieving all the constraints
+    if newVar:
+        cons = csp.get_cons_with_var(newVar)
+    else:
+        cons = csp.get_all_cons()
+
+    #all the pruned values will be stored in this list
+    pruned = []
+
+    '''
+    this block will detect an unassigned value 
+    in each constraint and determine the pruned values and the validity of csp
+    '''
+    for con in cons:
+        #looking for a constraint that has only one unassigned variable
+        if con.get_n_unasgn() == 1:
+            vars = con.get_unasgn_vars()
+            #this is the unassigned variable
+            var = vars[0]
+            '''
+            this for loop is for pruning the invalid values in the domain
+            if the current domain size is zero, the function will return False and all the pruned values
+            '''
+            for val in var.cur_domain():
+                #if the value does not satisfy, it will be pruned
+                if not con.check_var_val(var, val):
+                    var.prune_value(val)
+                    prune = (var, val)
+                    if prune not in pruned:
+                        pruned.append(prune)
+                #this is the case where the current domain size is zero
+                if var.cur_domain_size() == 0:
+                    return False, pruned
+
+    #this function returns True if there is no problem.
+    return True, pruned
 
 def prop_GAC(csp, newVar=None):
     '''Do GAC propagation. If newVar is None we do initial GAC enforce
        processing all constraints. Otherwise we do GAC enforce with
        constraints containing newVar on GAC Queue'''
-    #IMPLEMENT
-    pass
+
+    # this is for retrieving all the constraints
+    if newVar:
+        cons = csp.get_cons_with_var(newVar)
+    else:
+        cons = csp.get_all_cons()
+
+    # all the pruned values will be stored in this list
+    pruned = []
+
+    #this queue is for storing all the constraints
+    gac_queue = []
+    for con in cons:
+        gac_queue.append(con)
+
+    #This block is for detecting the problems in the csp and prune all the values
+    while gac_queue:
+        #remove the first constraint from the queue
+        curr_con = gac_queue[0]
+        gac_queue = gac_queue[1:]
+        #this is for getting all the unassigned variables
+        vars = curr_con.get_unasgn_vars()
+
+        '''
+        this for loop is for trying a value for an assigned variable.
+        then, this for loop will the other neighboring unassigned variables
+        '''
+        for var in vars:
+            #try one value for an assigned variable
+            for val in var.cur_domain():
+                #check the other unassigned variable in the constraint
+                for other_var in vars:
+                    for other_val in other_var.cur_domain():
+                        #this is for pruning values in some values in other variable that do not satisfy the constraint
+                        if not curr_con.check_var_val(other_var, other_val):
+                            other_var.prune_value(other_val)
+                            prune = (other_var, other_val)
+                            if prune not in pruned:
+                                pruned.append(prune)
+                        #this is the case where the current domain size is zero.
+                        if other_var.cur_domain_size() == 0:
+                            return False, pruned
+
+    return True, pruned
