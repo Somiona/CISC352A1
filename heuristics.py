@@ -1,6 +1,6 @@
 # =============================
-# Student Names:
-# Group ID:
+# Student Names: Jingyi Cheng
+# Group ID: 23
 # Date:
 # =============================
 # CISC 352 - W23
@@ -31,6 +31,7 @@ def ord_dh(csp):
     ''' return variables according to the Degree Heuristic '''
     maxLen = -1
     vars = csp.get_all_unasgn_vars()
+    largest = None
     # get list of all unassigned variables loop through
     for var in vars:
         # list of constraints that include var in their scope
@@ -44,6 +45,7 @@ def ord_mrv(csp):
     ''' return variable according to the Minimum Remaining Values heuristic '''
     minLen = 0
     vars = csp.get_all_unasgn_vars()
+    most = None
     # get list of all unassigned variables loop through
     for var in vars:
         # get number of legal values remaining
